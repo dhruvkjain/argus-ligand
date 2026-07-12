@@ -1,27 +1,70 @@
-# argus-ligand
+# argus-ligand (finds features/motifs in DNA)
+(i know is ligand used in checmical compounds but using rdkit on cloudflare workers :sigh: )
+ 
+You can paste a sequence and either build a scan by hand or ask for what you want in plain English, and Workers AI turns that request into a scan.
+> One Cloudflare Worker, One Workers AI (Llama 3.1 8B, JSON mode), One KV Cache, written in Rust (via [`workers-rs`](https://github.com/cloudflare/workers-rs)). The same Rust program serves the web page and does the DNA scanning.
 
-Find features in DNA. One Cloudflare Worker, written in Rust (via
-[`workers-rs`](https://github.com/cloudflare/workers-rs)). The same Rust program
-serves the web page and does the DNA scanning, so there is no JavaScript engine
-to maintain. You can paste a sequence and either build a scan by hand or ask for
-what you want in plain English, and Workers AI turns that request into a scan.
+> This is educational only. It is not a medical device, it works on example
+> teaching sequences, and nothing here should inform any real health decision.
+> Real clinical testing compares a person's DNA against a reference genome and
+> databases of known variants, which is a different kind of pipeline.
 
-## A little biology
 
-DNA is a long string over four letters called bases: A, C, G, and T. It is
-double stranded. Each base pairs with a complement (A with T, C with G), so the
-second strand is the reverse complement of the first. A feature can sit on either
-strand, which is why most scans can look at both.
+</br>
+</br>
 
-A **motif** is a short recurring pattern in the sequence that carries meaning,
-for example a spot where a protein binds. Motifs are written in **IUPAC codes**,
-which add letters that stand for "any of these bases". For example W means A or
-T, R means A or G, and N means any base. So the pattern `TATAWAWR` describes a
-whole family of related sequences rather than one fixed string. That is why a
-real promoter search uses `TATAWAWR` and not just `TATAAA`: the plain string
-would miss the common variants `TATATAA`, `TATAAAA`, `TATAAAG`, and so on.
+## Example: seeing sickle cell anemia
 
-The scanner supports these analyses, each standing for a real biological idea:
+Sickle cell anemia is a disease which is identified with only one letter. 
+In the beta-globin gene the codon `GAG` (glutamate) becomes `GTG`
+(valine): a single A to T change. 
+
+Two of the scans here show that change on an example sequence.
+
+Healthy allele:
+
+```
+ATGGTGCACCTGACTCCTGAGGAGAAGTCTGCC
+```
+
+Sickle allele (the single base flipped, `GAG` to `GTG`):
+
+```
+ATGGTGCACCTGACTCCTGTGGAGAAGTCTGCC
+```
+
+- **Way 1, motif search :** 
+Search the motif `CCTGAGG`. It is present in the healthy allele and absent in the sickle allele. Searching `CCTGTGG` does the opposite. So one motif tells the two apart.
+
+- **Way 2, restriction site (how it is really diagnosed) :** 
+The healthy sequence `CCTGAGG` is a cut site for the enzyme MstII, whose recognition sequence is
+`CCTNAGG`. The sickle mutation turns it into `CCTGTGG`, which MstII no longer
+cuts. So a restriction scan for MstII finds one site in the healthy allele and
+none in the sickle allele. "The enzyme stops cutting" is a genuine historical
+diagnostic, called an RFLP (restriction fragment length polymorphism).
+
+> Other conditions map onto the same ideas: many traits and disorders are single
+> base changes a motif can spot, while repeat expansion disorders (for example
+> Huntington's disease, caused by too many `CAG` repeats) are about counting a
+> repeated unit.
+
+</br>
+</br>
+
+
+## A tini-tiny biology (just asked AI to explained in simpler terms)
+
+DNA is a long string over four letters called bases: A, C, G, and T. It is double stranded. Each base pairs with a complement (A with T, C with G), so the second strand is the reverse complement of the first. 
+
+Soooo, a feature can sit on either strand, which is why most scans can look at both.
+
+> A **motif** is a short recurring pattern in the sequence that carries meaning, for example a spot where a protein binds. 
+
+> Motifs are written in **IUPAC codes**, which add letters that stand for "any of these bases". 
+
+> For example W means A or T, R means A or G, and N means any base. So the pattern `TATAWAWR` describes a whole family of related sequences rather than one fixed string. That is why a real promoter search uses `TATAWAWR` and not just `TATAAA`: the plain string would miss the common variants `TATATAA`, `TATAAAA`, `TATAAAG`, and so on.
+
+The scanner supports these analyses:
 
 - **Motif (literal or IUPAC).** Where a pattern occurs, on either strand. The
   classic example is the TATA box, a signal found near the start of many genes.
@@ -43,91 +86,22 @@ The scanner supports these analyses, each standing for a real biological idea:
 A site that reads the same on both strands (a palindrome, like the EcoRI site
 `GAATTC`) is reported once with strand `±` instead of being double counted.
 
-## Example: seeing sickle cell anemia
+</br>
+</br>
 
-Sickle cell anemia is the classic teaching case, because the disease is one
-letter. In the beta-globin gene the codon `GAG` (glutamate) becomes `GTG`
-(valine): a single A to T change. Two of the scans here show that change on an
-example sequence.
-
-Healthy allele:
-
-```
-ATGGTGCACCTGACTCCTGAGGAGAAGTCTGCC
-```
-
-Sickle allele (the single base flipped, `GAG` to `GTG`):
-
-```
-ATGGTGCACCTGACTCCTGTGGAGAAGTCTGCC
-```
-
-**Way 1, motif search.** Search the motif `CCTGAGG`. It is present in the healthy
-allele and absent in the sickle allele. Searching `CCTGTGG` does the opposite. So
-one motif tells the two apart.
-
-**Way 2, restriction site (how it was really diagnosed).** The healthy sequence
-`CCTGAGG` is a cut site for the enzyme MstII, whose recognition sequence is
-`CCTNAGG`. The sickle mutation turns it into `CCTGTGG`, which MstII no longer
-cuts. So a restriction scan for MstII finds one site in the healthy allele and
-none in the sickle allele. "The enzyme stops cutting" is a genuine historical
-diagnostic, called an RFLP (restriction fragment length polymorphism).
-
-Other conditions map onto the same ideas: many traits and disorders are single
-base changes a motif can spot, while repeat expansion disorders (for example
-Huntington's disease, caused by too many `CAG` repeats) are about counting a
-repeated unit.
-
-> This is educational only. It is not a medical device, it works on example
-> teaching sequences, and nothing here should inform any real health decision.
-> Real clinical testing compares a person's DNA against a reference genome and
-> databases of known variants, which is a different kind of pipeline.
 
 ## Architecture
+<p align="center">
+<img width="711" height="701" alt="image" src="https://github.com/user-attachments/assets/fdcd5846-e80d-4080-91ad-b9e7e23bd4c4" />
+</p>
 
-```
-   +-------------------------------------------------------+
-   |  Browser                                              |
-   |  public/index.html + index.css + index.js             |
-   |  paste a sequence, ask in English, or build a scan    |
-   +---------------------------+---------------------------+
-                               |  HTTP / JSON
-        GET /   POST /scan   POST /ask   GET /samples
-                               |
-   +---------------------------v---------------------------+
-   |  Cloudflare Worker    worker_app.rs   (Rust -> WASM)  |
-   |  routing, static assets, AI daily rate limit          |
-   +------+--------------------+--------------------+-------+
-          | scans              | prompt             | cache + limit
-          v                    v                    v
-   +--------------+     +----------------+    +----------------+
-   |  engine.rs   |<----|  ai.rs         |    |  KV namespace  |
-   |  orchestrator|scans|  Workers AI    |    |  cache + quota |
-   +------+-------+     |  (Llama 3.1)   |    +----------------+
-          | dispatch    +----------------+
-          v
-   +------------------------------------------------------+
-   |  scan engine (pure Rust, runs under `cargo test`)    |
-   |    pattern/   motif, iupac, restriction, pwm         |
-   |    window/    gc (GC and CpG), skew                  |
-   |    orf.rs     open reading frames                    |
-   |    sequence.rs  cleaning, reverse complement         |
-   +------------------------------------------------------+
-```
-
-The engine is pure Rust with no Worker dependency, so it compiles and runs
-natively under `cargo test`. Only `worker_app.rs`, `ai.rs`, and the KV code are
-tied to the Worker runtime, and they are compiled for the `wasm32` target.
+</br>
+</br>
 
 ## Project layout
 
 ```
 📁 argus-ligand/
-│
-├── Cargo.toml
-├── wrangler.jsonc
-├── package.json
-├── README.md
 │
 ├── 📁 src/
 │   ├── lib.rs            crate root: module wiring and re-exports
@@ -163,6 +137,9 @@ tied to the Worker runtime, and they are compiled for the `wasm32` target.
         └── lambda.fasta  phage lambda genome (48,502 bp)
 ```
 
+</br>
+</br>
+
 ## Where does the data come from?
 
 A sequence enters three ways:
@@ -174,8 +151,8 @@ A sequence enters three ways:
 3. **A tiny synthetic demo** (the TATA-box and ORF buttons) for showing a
    specific pattern quickly.
 
-There is no live external database. The real samples are bundled at build time,
-not fetched at runtime.
+</br>
+</br>
 
 ## Develop
 
@@ -194,8 +171,7 @@ npx wrangler dev
 npx wrangler deploy
 ```
 
-Building a scan by hand needs no Cloudflare account. Workers AI has no local
-emulator, so once the AI binding is present, `wrangler dev` opens a remote
-session and needs `wrangler login`. Testing the plain-English mode therefore
-requires a logged in Cloudflare account with Workers AI enabled. Building scans
-by hand keeps working offline.
+</br>
+
+---
+<sub>Built with 💻 & ☕️ | © 2025 [Dhruv Jain](https://github.com/dhruvkjain)</sub>
