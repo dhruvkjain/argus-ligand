@@ -1,5 +1,5 @@
 # argus-ligand (finds features/motifs in DNA)
-(i know is ligand used in checmical compounds but using rdkit on cloudflare workers :sigh: )
+(i know that term ligand is used in checmical compounds but using rdkit on cloudflare workers :sigh: )
  
 You can paste a sequence and either build a scan by hand or ask for what you want in plain English, and Workers AI turns that request into a scan.
 > One Cloudflare Worker, One Workers AI (Llama 3.1 8B, JSON mode), One KV Cache, written in Rust (via [`workers-rs`](https://github.com/cloudflare/workers-rs)). The same Rust program serves the web page and does the DNA scanning.
