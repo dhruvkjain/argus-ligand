@@ -230,6 +230,17 @@ async fn fetch(req: Request, env: Env, _ctx: Context) -> Result<Response> {
                 None => Response::error("unknown sample", 404),
             }
         })
+        .get_async("/quota", |req, ctx| async move {
+            // Read-only: report the caller's remaining AI budget without spending it,
+            // so the page can show the true count right after a refresh.
+            let ip = client_ip(&req);
+            let cache = ctx.env.kv("PROMPT_CACHE").ok();
+            let remaining = match &cache {
+                Some(s) => AI_CALL_LIMIT.saturating_sub(ai_calls_used(s, &ip).await),
+                None => AI_CALL_LIMIT,
+            };
+            Response::from_json(&serde_json::json!({ "remaining": remaining, "max": AI_CALL_LIMIT }))
+        })
         .post_async("/scan", |mut req, _ctx| async move {
             let body = req.text().await?;
             let out = scan(&body); // JSON string in, JSON string out

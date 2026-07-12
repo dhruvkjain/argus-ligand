@@ -320,6 +320,13 @@ sampleSel.onchange = async () => {
   }
 };
 
+// Show the real remaining AI budget on load. The limit is server-side (per IP),
+// so a refresh does not reset it; this just makes the badge tell the truth.
+fetch("/quota")
+  .then((r) => r.json())
+  .then((d) => updateQuota(d.remaining, d.max))
+  .catch(() => {});
+
 // Seed: TATA-box sequence, a matching manual scan, and a ready prompt.
 document.getElementById("seq").value = EXAMPLES.tata.seq;
 document.getElementById("prompt").value = "show me all CpG islands and any genes";
