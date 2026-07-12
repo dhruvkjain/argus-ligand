@@ -1,0 +1,22 @@
+[package]
+name = "argus-ligand"
+version = "0.1.0"
+edition = "2021"
+description = "DNA motif scanner — 100% Rust Cloudflare Worker (workers-rs)."
+
+[lib]
+# cdylib -> the .wasm the Worker runs; rlib -> lets `cargo test` build natively.
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# `worker` only exists on the wasm32 target, so `cargo test` on your machine
+# compiles just the pure engine (fast, native) and never drags in the Worker glue.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+worker = "0.8"
+
+[profile.release]
+opt-level = "s"
+lto = true

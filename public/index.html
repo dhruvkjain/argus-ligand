@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>argus-ligand · DNA motif scanner</title>
+    <link rel="stylesheet" href="/index.css" />
+  </head>
+  <body>
+    <main class="app">
+      <div class="bento">
+        <header class="card brand">
+          <div class="brand-row">
+            <div class="mark">🧬</div>
+            <div>
+              <h1>argus-ligand</h1>
+              <p class="tagline">
+                Find motifs in DNA. IUPAC + ORF, GC / CpG, restriction, PWM, with a
+                natural-language front door.
+              </p>
+            </div>
+          </div>
+          <div class="pills">
+            <span class="status">● online</span>
+          </div>
+        </header>
+
+        <section class="card input">
+          <div class="card-head"><h2>Sequence</h2><span class="hint-inline">raw or FASTA</span></div>
+          <textarea id="seq" spellcheck="false" placeholder=">my_sequence&#10;ACGTACGT..."></textarea>
+          <div class="chips-row examples-ex">
+            <button class="ghost" data-ex="tata" type="button">TATA-box demo</button>
+            <button class="ghost" data-ex="orf" type="button">ORF demo</button>
+            <button class="ghost" data-ex="clear" type="button">Clear</button>
+          </div>
+          <div class="sample-row">
+            <label for="sample">Real genome</label>
+            <select id="sample"><option value="">choose a sample…</option></select>
+          </div>
+        </section>
+
+        <section class="card controls">
+          <div class="tabs">
+            <button class="tab active" id="tab-ask" type="button">Ask in plain English</button>
+            <button class="tab" id="tab-manual" type="button">Build manually</button>
+          </div>
+
+          <div id="askPanel">
+            <label for="prompt">Your request</label>
+            <textarea id="prompt" spellcheck="false" placeholder="e.g. find CpG islands and any genes"></textarea>
+            <div class="chips-row">
+              <button class="ghost" data-ask="find TATA boxes on both strands" type="button">find TATA boxes</button>
+              <button class="ghost" data-ask="find all genes at least 20 amino acids long" type="button">find genes</button>
+              <button class="ghost" data-ask="show me all CpG islands longer than 10 bases" type="button">CpG islands</button>
+              <button class="ghost" data-ask="map all restriction enzyme sites" type="button">restriction sites</button>
+              <button class="ghost" data-ask="find the replication origin using GC skew" type="button">replication origin</button>
+            </div>
+            <button class="primary" id="ask" type="button">Ask</button>
+            <div class="ai-meta">
+              <span class="badge" id="quota">AI · 5/5 today</span>
+              <span class="hint">Limited to 5 AI requests / day. Cached repeats and manual mode are free.</span>
+            </div>
+          </div>
+
+          <div id="manualPanel" hidden>
+            <label>Scans</label>
+            <div class="scans" id="scans"></div>
+            <button class="ghost" id="add" type="button">+ add scan</button>
+            <button class="primary" id="run" type="button">Scan</button>
+          </div>
+        </section>
+
+        <section class="card results">
+          <div class="card-head"><h2>Results</h2></div>
+          <div id="out">
+            <div class="placeholder">Run a scan to see results.</div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script src="/index.js" defer></script>
+  </body>
+</html>
